@@ -45,6 +45,11 @@ class ServerProtocol(DatagramProtocol):
             self.registered_clients[c_name] = new_client
             self.active_sessions[c_session].client_registered(new_client)
 
+    def exchange_info(self, c_session):
+        if not c_session in self.active_sessions:
+            return
+        self.active_sessions[c_session].exchange_peer_info()
+
     def client_checkout(self, name):
         try:
             del self.registered_clients[name]
@@ -61,9 +66,9 @@ class ServerProtocol(DatagramProtocol):
             # register session
             split = data_string.split(":")
             session = split[1]
-            client_list = split[2]
-            client_list = client_list.split(",")
-            self.create_session(session, client_list)
+            max_clients = split[2]
+            self.create_session(session, max_clients)
+            self.transport.write(bytes('ok:'+str(port),"utf-8"), address)
 
         elif msg_type == "rc":
             # register client
@@ -72,6 +77,13 @@ class ServerProtocol(DatagramProtocol):
             c_session = split[2]
             c_ip, c_port = address
             self.register_client(c_name, c_session, c_ip, c_port)
+        
+        elif msg_type == "ep":
+            # exchange peers
+            split = data_string.split(":")
+            c_name = split[1]
+            c_session = split[2]
+            self.exchange_info(c_name, c_session)
 
         elif msg_type == "cc":
             # checkout client
@@ -84,19 +96,19 @@ class ServerProtocol(DatagramProtocol):
 class Session:
 
     id = -1
-    client_list = []
+    client_max = "2"
     registered_clients = []
 
-    def __init__(self, session_id, invited_clients, server):
+    def __init__(self, session_id, max_clients, server):
         self.id = session_id
-        self.client_list = invited_clients
+        self.client_max = max_clients
         self.server = server
 
     def client_registered(self, client):
         if client in self.registered_clients: return
-        print("Client %c registered for Session %s" % client.name, self.id)
+       # print("Client %c registered for Session %s" % client.name, self.id)
         self.registered_clients.append(client)
-        if len(self.registered_clients) == len(self.client_list):
+        if len(self.registered_clients) == int(self.client_max):
             print("Session full, sending out info to peers")
             self.exchange_peer_info()
 
