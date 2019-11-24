@@ -68,7 +68,8 @@ class ServerProtocol(DatagramProtocol):
             session = split[1]
             max_clients = split[2]
             self.create_session(session, max_clients)
-            self.transport.write(bytes('ok:'+str(port),"utf-8"), address)
+            c_ip, c_port = address
+            self.transport.write(bytes('ok:'+str(c_port),"utf-8"), address)
 
         elif msg_type == "rc":
             # register client
@@ -77,13 +78,13 @@ class ServerProtocol(DatagramProtocol):
             c_session = split[2]
             c_ip, c_port = address
             self.register_client(c_name, c_session, c_ip, c_port)
+            self.transport.write(bytes('ok:'+str(c_port),"utf-8"), address)
         
         elif msg_type == "ep":
             # exchange peers
             split = data_string.split(":")
-            c_name = split[1]
-            c_session = split[2]
-            self.exchange_info(c_name, c_session)
+            c_session = split[1]
+            self.exchange_info(c_session)
 
         elif msg_type == "cc":
             # checkout client
@@ -120,7 +121,7 @@ class Session:
                     address_list.append(client.name + ":" + address_to_string((client.ip, client.port)))
             address_string = ",".join(address_list)
             message = bytes( "peers:" + address_string, "utf-8")
-            self.server.transport.write(message, addressed_client.ip, addressed_client.port)
+            self.server.transport.write(message, (addressed_client.ip, addressed_client.port))
 
         print("Peer info has been sent. Terminating Session")
         self.server.remove_session(self.id)
