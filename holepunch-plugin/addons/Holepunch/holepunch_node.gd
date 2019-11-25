@@ -21,6 +21,8 @@ var starting_game = false
 
 var own_port
 var peers = {}
+var host_address
+var host_port
 var client_name
 var p_timer
 var cascade_timer
@@ -70,6 +72,9 @@ func _process(delta):
 						
 					peers[m[2]].is_host = m[3]
 					peers[m[2]].port = confirmed_port
+					if peers[m[2]].is_host:
+						host_address = peers[m[2]]
+						host_port = peers[m[2]].port
 					peer_udp.close()
 					peer_udp.listen(peers[m[2]].port, "*")
 					print("Sending go")
@@ -94,14 +99,14 @@ func _process(delta):
 		
 		if not found_server:
 			if packet_string.begins_with("ok"):
-					found_server=true
-					print("Recieved ok from Rendezvous Server")
-					var m = packet_string.split(":")
-					own_port =int( m[1] )
-					print("Own port is: " + str(own_port))
-					print("Waiting for peer...")
-					if is_host:
-						_send_client_to_server()
+				found_server=true
+				print("Recieved ok from Rendezvous Server")
+				var m = packet_string.split(":")
+				own_port =int( m[1] )
+				print("Own port is: " + str(own_port))
+				print("Waiting for peer...")
+				if is_host:
+					_send_client_to_server()
 					
 				
 		elif peer_info == 0:
