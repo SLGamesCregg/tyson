@@ -106,6 +106,7 @@ func _process(delta):
 				print("Own port is: " + str(own_port))
 				print("Waiting for peer...")
 				if is_host:
+					emit_signal("port_updated")
 					_send_client_to_server()
 					
 				
